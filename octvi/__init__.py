@@ -129,6 +129,69 @@ def mosaic(in_files:list,out_path:str) -> str:
 
 	return out_path
 
+
+def cmgGcvi(date, out_path: str, overwrite=False) -> str:
+	"""
+	This function produces an 8-day composite GCVI image
+	at cmg scale (MOD09CMG), beginning on the provided date
+
+	***
+
+	Parameters
+	----------
+	date:str
+		Start date in format "%Y-%m-%d"
+	out_path:str
+		Full path to output file location on disk
+	overwrite:bool
+		Whether to allow overwriting of existing file on disk.
+		Default: False
+	"""
+
+	if os.path.exists(out_path) and overwrite == False:
+		raise FileExistsError(f"{out_path} already exists. To overwrite file, set 'overwrite=True'.")
+
+	working_directory = os.path.dirname(out_path)
+
+	log.info("Fetching dates")
+	## build list of eight days in compositing period
+	# each date is a datetime object
+	dates = [datetime.strptime(date, "%Y-%m-%d")]
+	while len(dates) < 8:
+		dates.append(dates[-1] + timedelta(days=1))
+
+	## download all hdfs and record their paths
+	log.info("Downloading daily GCVI files")
+	hdfs = []
+	try:
+		for dobj in dates:
+			d = dobj.strftime("%Y-%m-%d")
+			log.debug(d)
+			url = octvi.url.getUrls("MOD09CMG", d)[0][0]
+			hdfs.append(octvi.url.pull(url, working_directory))
+
+		## create ideal gcvi array
+		log.info("Creating composite")
+		gcviArray = octvi.extract.cmgBestGcviPixels(hdfs)
+
+		## write to disk
+		octvi.array.toRaster(gcviArray, out_path, hdfs[0])
+
+		## project to WGS84
+		ds = gdal.Open(out_path, 1)
+		if ds:
+			res = ds.SetProjection(
+				'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
+			if res != 0:
+				logging.error("--projection failed: {}".format(str(res)))
+			ds = None
+		else:
+			logging.error("--could not open with GDAL")
+	finally:
+		## delete hdfs
+		for hdf in hdfs:
+			os.remove(hdf)
+
 def cmgNdvi(date,out_path:str,overwrite=False) -> str:
 	"""
 	This function produces an 8-day composite NDVI image
@@ -252,3 +315,64 @@ def globalNdvi(product,date,out_path:str,overwrite=False) -> str:
 	endTime = datetime.now()
 	log.info(f"Done. Elapsed time {endTime-startTime}")
 
+
+def globalGcvi(product, date, out_path: str, overwrite=False) -> str:
+	"""
+	This function takes the name of an imagery product and an
+	observation date, and creates a global mosaic of the given
+	product's GCVI on that date.
+
+	Returns the path to the output file.
+
+	...
+
+	Parameters
+	----------
+
+	product: str
+		Name of imagery product; e.g. "MOD09Q1"
+	date: str
+		Date in format "%Y-%m-%d"
+	out_path: str
+		Full path to location where output file will be saved; e.g. "C:/temp/output.tif"
+	overwrite: bool
+		Default False, whether to overwrite existing file at out_path
+	"""
+
+	startTime = datetime.now()
+
+	if product not in supported_products:
+		raise octvi.exceptions.UnsupportedError(
+			f"Product '{product}' is not currently supported. See octvi.supported_products for list of supported products.")
+
+	if os.path.exists(out_path) and overwrite == False:
+		raise FileExistsError(f"{out_path} already exists. To overwrite file, set 'overwrite=True'.")
+
+	working_directory = os.path.dirname(out_path)
+
+	if product[5:8] == "CMG":
+		cmgGcvi(date, out_path, overwrite)
+	else:
+		log.info("Fetching urls")
+		tiles = octvi.url.getUrls(product, date)
+		log.info("Building GCVI tiles")
+		gcvi_files = []
+		for tile in tiles:
+			# if tile[1][-2:] in ["00","01","16","17"]:
+			# log.info(f"skipping {tile[1]}")
+			# continue
+			log.debug(tile[1])
+			url = tile[0]
+			hdf_file = octvi.url.pull(url, working_directory)
+			ext = os.path.splitext(hdf_file)[1]
+			gcvi_files.append(octvi.extract.gcviToRaster(hdf_file, hdf_file.replace(ext, ".gcvi.tif")))
+			os.remove(hdf_file)
+		log.info("Creating mosaic")
+		mosaic(gcvi_files, out_path)
+
+		## remove indiviual HDFs
+		for f in gcvi_files:
+			os.remove(f)
+
+	endTime = datetime.now()
+	log.info(f"Done. Elapsed time {endTime - startTime}")

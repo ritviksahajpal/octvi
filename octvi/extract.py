@@ -99,6 +99,65 @@ def datasetToRaster(stack_path,dataset_name, out_path,dtype = None) -> None:
 	sd_array = datasetToArray(stack_path, dataset_name)
 	return octvi.array.toRaster(sd_array, out_path, model_file = datasetToPath(stack_path, dataset_name),dtype=dtype)
 
+def gcviToArray(in_stack) -> "numpy array":
+	"""
+	This function finds the correct Green and NIR bands
+	from a hierarchical file, calculates an GCVI array,
+	and returns the outpus in numpy array format.
+
+	Valid input formats are MODIS HDF or VIIRS HDF5 (h5).
+
+	...
+
+	Parameters
+	----------
+
+	in_stack: str
+		Full path to input hierarchical file
+
+	"""
+
+	suffix = os.path.basename(in_stack).split(".")[0][3:7]
+
+	# check whether it's an ndvi product
+	if suffix == "09Q4" or suffix == "13Q4":
+		arr_ndvi = datasetToArray(in_stack, "250m 8 days NDVI")
+
+	elif suffix == "13Q1":
+		arr_ndvi = datasetToArray(in_stack, "250m 16 days NDVI")
+
+	elif suffix == "09CM":
+		sdName_grn = "Coarse Resolution Surface Reflectance Band 4"
+		sdName_nir = "Coarse Resolution Surface Reflectance Band 2"
+
+		## extract red and nir bands from stack
+		arr_grn = datasetToArray(in_stack,sdName_grn)
+		arr_nir = datasetToArray(in_stack,sdName_nir)
+
+		## perform calculation
+		arr_gcvi = octvi.array.calcGcvi(arr_grn,arr_nir)
+
+	else:
+		## determine correct band subdataset names
+		ext = os.path.splitext(in_stack)[1]
+		if ext == ".hdf":
+			sdName_grn = "sur_refl_b04"
+			sdName_nir = "sur_refl_b02"
+		elif ext == ".h5":
+			sdName_grn = "SurfReflect_I4"
+			sdName_nir = "SurfReflect_I2"
+		else:
+			raise octvi.exceptions.FileTypeError("File must be of type .hdf or .h5")
+
+		## extract red and nir bands from stack
+		arr_grn = datasetToArray(in_stack,sdName_grn)
+		arr_nir = datasetToArray(in_stack,sdName_nir)
+
+		## perform calculation
+		arr_gcvi = octvi.array.calcGcvi(arr_grn,arr_nir)
+
+	return arr_ndvi
+
 def ndviToArray(in_stack) -> "numpy array":
 	"""
 	This function finds the correct Red and NIR bands
@@ -157,6 +216,34 @@ def ndviToArray(in_stack) -> "numpy array":
 		arr_ndvi = octvi.array.calcNdvi(arr_red,arr_nir)
 
 	return arr_ndvi
+
+def gcviToRaster(in_stack,out_path) -> str:
+	"""
+	This function directly converts a hierarchical data
+	file into an GCVI raster.
+
+	Returns the string path to the output file
+	"""
+
+	# create gcvi array
+	gcviArray = gcviToArray(in_stack)
+
+	# apply cloud, shadow, and water masks
+	gcviArray = octvi.array.mask(gcviArray, in_stack)
+
+	sample_sd = getDatasetNames(in_stack)[0]
+
+	#ext = os.path.splitext(in_stack)[1]
+	#if ext == ".hdf":
+		#sample_sd = "sur_refl_b01"
+	#elif ext == ".h5":
+		#sample_sd = "SurfReflect_I1"
+	#else:
+		#raise octvi.exceptions.FileTypeError("File must be of format .hdf or .h5")
+
+	octvi.array.toRaster(ndviArray,out_path,datasetToPath(in_stack,sample_sd))
+
+	return out_path
 
 def ndviToRaster(in_stack,out_path) -> str:
 	"""
@@ -371,3 +458,57 @@ def cmgBestNdviPixels(input_stacks:list) -> "numpy array":
 
 	# return result
 	return finalNdvi
+
+def cmgBestGcviPixels(input_stacks:list) -> "numpy array":
+	"""
+	This function takes a list of hdf stack paths, and
+	returns the 'best' GCVI value for each pixel location,
+	determined through the ranking method (see
+	cmgToRankArray() for details).
+
+	***
+
+	Parameters
+	----------
+	input_stacks:list
+		A list of strings, each pointing to a MOD**CMG hdf file
+		on disk
+	"""
+
+	rankArrays = [cmgToRankArray(hdf) for hdf in input_stacks]
+	vangArrays = [cmgToViewAngArray(hdf) for hdf in input_stacks]
+	gcviArrays = [gcviToArray(hdf) for hdf in input_stacks]
+	#ndviArrays = [octvi.array.mask(ndviToArray(hdf),hdf) for hdf in input_stacks]
+
+	# no nodata wanted
+	for i in range(len(rankArrays)):
+		rankArrays[i][ndviArrays[i] == -3000] = 0
+
+	idealRank = np.maximum.reduce(rankArrays)
+
+	# mask non-ideal view angles
+	for i in range(len(vangArrays)):
+		vangArrays[i][rankArrays[i] != idealRank] = 9998
+		vangArrays[i][vangArrays[i] == 0] = 9997
+
+	idealVang = np.minimum.reduce(vangArrays)
+	#print("Max vang:")
+	#print(np.amax(idealVang))
+	#octvi.array.toRaster(idealVang,"C:/temp/MOD09CMG.VANG.tif",input_stacks[0])
+	#octvi.array.toRaster(idealRank,"C:/temp/MOD09CMG.RANK.tif",input_stacks[0])
+
+	finalGcvi = np.full(gcviArrays[0].shape,-3000)
+
+	# mask each gcviArray to only where it matches ideal rank
+	for i in range(len(gcviArrays)):
+		finalGcvi[vangArrays[i] == idealVang] = gcviArrays[i][vangArrays[i] == idealVang]
+
+	# mask out ranks that are too low
+	finalGcvi[idealRank <=7] = -3000
+
+	# mask water
+	water = cmgListToWaterArray(input_stacks)
+	finalGcvi[water==1] = -3000
+
+	# return result
+	return finalGcvi

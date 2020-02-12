@@ -7,6 +7,38 @@ import gdal, h5py, octvi.extract
 import numpy as np
 from gdalnumeric import *
 
+def calcGcvi(grn_array,nir_array) -> "numpy array":
+	"""
+	A function to robustly build an GCVI array from two
+	arrays (green and NIR) of the same shape.
+
+	Resulting array is scaled by 10000, with values stored
+	as integers. Nodata value is -3000.
+
+	...
+
+	Parameters
+	----------
+
+	red_array: numpy.array
+		Array of red reflectances
+	nir_array: numpy.array
+		Array of near-infrared reflectances
+
+	"""
+
+	## perform NDVI generation
+	gcvi = np.divide(nir_array, grn_array) - 1.
+
+	## rescale and replace infinities
+	gcvi = gcvi * 10000
+	gcvi[gcvi == np.inf] = -3000
+	gcvi[gcvi == -np.inf] = -3000
+	gcvi = gcvi.astype(int)
+
+	## return array
+	return gcvi
+
 def calcNdvi(red_array,nir_array) -> "numpy array":
 	"""
 	A function to robustly build an NDVI array from two
