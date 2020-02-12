@@ -164,7 +164,7 @@ def cmgGcvi(date, out_path: str, overwrite=False) -> str:
 	log.info("Downloading daily GCVI files")
 	hdfs = []
 	try:
-		for dobj in dates:
+		for dobj in tqdm(dates, desc='downloading'):
 			d = dobj.strftime("%Y-%m-%d")
 			log.debug(d)
 			url = octvi.url.getUrls("MOD09CMG", d)[0][0]
