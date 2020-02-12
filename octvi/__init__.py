@@ -38,7 +38,7 @@ import octvi.exceptions, octvi.array, octvi.extract, octvi.url
 from octvi.url import supported_products
 import gdal, shutil, subprocess
 from datetime import datetime, timedelta
-
+from tqdm import tqdm
 
 __all__ = [
 			'exceptions',
@@ -357,7 +357,7 @@ def globalGcvi(product, date, out_path: str, overwrite=False) -> str:
 		tiles = octvi.url.getUrls(product, date)
 		log.info("Building GCVI tiles")
 		gcvi_files = []
-		for tile in tiles:
+		for tile in tqdm(tiles, desc='downloading'):
 			# if tile[1][-2:] in ["00","01","16","17"]:
 			# log.info(f"skipping {tile[1]}")
 			# continue
