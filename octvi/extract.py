@@ -482,7 +482,7 @@ def cmgBestGcviPixels(input_stacks:list) -> "numpy array":
 
 	# no nodata wanted
 	for i in range(len(rankArrays)):
-		rankArrays[i][ndviArrays[i] == -3000] = 0
+		rankArrays[i][gcviArrays[i] == -3000] = 0
 
 	idealRank = np.maximum.reduce(rankArrays)
 
