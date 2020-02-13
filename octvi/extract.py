@@ -156,7 +156,7 @@ def gcviToArray(in_stack) -> "numpy array":
 		## perform calculation
 		arr_gcvi = octvi.array.calcGcvi(arr_grn,arr_nir)
 
-	return arr_ndvi
+	return arr_gcvi
 
 def ndviToArray(in_stack) -> "numpy array":
 	"""
