@@ -3,6 +3,10 @@ Python package for downloading, mosaicking, or compositing MODIS-scale NDVI imag
 
 # Updates
 
+## New in Version 2.1.0
+
+Support has been added for the product MOD09A1, along with Normalized Difference Water Index for that product.
+
 ## New in Version 2.0.4
 
 A bug in the `octviconfig` console script has been fixed. Setting a personal NASA app key is now possible.
