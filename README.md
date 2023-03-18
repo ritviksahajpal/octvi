@@ -1,6 +1,24 @@
 # octvi
 Python package for downloading, mosaicking, or compositing MODIS-scale NDVI imagery
 
+# Updates
+
+## New in Version 2.1.0
+
+Support has been added for the product MOD09A1, along with Normalized Difference Water Index for that product.
+
+## New in Version 2.0.4
+
+A bug in the `octviconfig` console script has been fixed. Setting a personal NASA app key is now possible.
+
+## New in Version 2.0.2
+
+The default masking criteria for MxD09Q1, MxD13Q1, and MxD13Q4N imagery have been relaxed. MxD09Q1 files no longer remove "average" aerosol pixels, and pixels flagged as "cloud-adjacent", which were formerly removed, are now kept. For MxD13 imagery, masking previously relied on the simple "pixel reliability index." This method has been replaced with a more granular masking schema, closely resembling that used for MxD09 data.
+
+## New in Version 2.0.0
+
+Downloading from the NASA distributed archives (DAACs) requires a personal app key. This key was previously provided as part of the `octvi` distribution, but this is no longer the case as of Version 2.0.0. Instead, users must configure the module using a new console script, `octviconfig`. After installation, run `octviconfig` to prompt the input of your personal app key. Information on obtaining app keys can be found at https://ladsweb.modaps.eosdis.nasa.gov/tools-and-services/data-download-scripts/#tokens.
+
 # Motivation
 I work on development of the Global Agriculture Monitoring (GLAM) system. A core feature of the system is the ability to display large amounts of Vegetation Index (VI) imagery, pulled from sources like the MODIS and VIIRS satellite sensors. Obviously, displaying that imagery through our system requires the ability to download it from its source. This is harder than it sounds, especially when we also want to extract specific subdatasets, convert to a different file format, and mosaic dozens of individual "tiles" into a single global image.
 
@@ -19,7 +37,8 @@ The primary functionality of the `octvi` module is the creation of global mosaic
 * LANCE Near Real-Time
   * MODIS 8-day Terra (MOD09Q1N)
   * MODIS 16-day Terra (MOD13Q4N)
-* MODIS 8-day Climate Modeling Grid (CMG)-scale NDVI (MOD09CMG; custom compositing)
+* MODIS 8-day Climate Modeling Grid (CMG)-scale NDVI/GCVI (MOD09CMG; custom compositing)
+  * Note that MOD09CMG supports Green Chlorophyll Vegetation Index (GCVI) as well as NDVI
 
 # Code Example
 
@@ -27,13 +46,13 @@ The primary functionality of the `octvi` module is the creation of global mosaic
 import octvi # import module
 
 # create a list of all days in January 2019 for which there exists valid VNP09H1 imagery
-viirsJanuaryDates = octvi.url.getDates("VNP09H1","2019-01") 
+viirsJanuaryDates = octvi.url.getDates("VNP09H1","2019-01")
 
 # generate global NDVI mosaic of MOD09Q1 data for an 8-day period starting on January 1st, 2019
-octvi.globalNdvi("MOD09Q1","2019-01-01","C:/temp/example_standard.tif") 
+octvi.globalVi("MOD09Q1","2019-01-01","C:/temp/example_standard.tif")
 
-# generate custome composite of CMG-scale NDVI for an 8-day period starting on January 1st, 2019
-octvi.globalNdvi("MOD09CMG","2019-01-01","C:/temp/example_cmg.tif") 
+# generate custome composite of CMG-scale GCVI for an 8-day period starting on January 1st, 2019
+octvi.globalVi("MOD09CMG","2019-01-01","C:/temp/example_cmg.tif",vi="GCVI")
 ```
 
 # How to Use

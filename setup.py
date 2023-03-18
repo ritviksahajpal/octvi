@@ -10,11 +10,14 @@ def readme():
 	with open('README.md') as f:
 		return f.read()
 
+exec(open('octvi/_version.py').read())
+
 setup(name='octvi',
-		version='1.0.0',
+		version=__version__,
 		description='MODIS 8-day NDVI Downloader',
 		long_description=readme(),
 		long_description_content_type='text/markdown',
+		url="https://github.com/fdfoneill/octvi",
 		author="F. Dan O'Neill",
 		author_email='fdfoneill@gmail.com',
 		license='MIT',
@@ -22,7 +25,7 @@ setup(name='octvi',
 		include_package_data=True,
 		# third-party dependencies
 		install_requires=[
-			'numpy',
+			'numpy>=1.18',
 			'h5py',
 			'gdal'
 			],
@@ -41,6 +44,6 @@ setup(name='octvi',
 		zip_safe=False,
 		# console scripts
 		entry_points = {
-			'console_scripts': ['octvidownload=octvi.command_line:main'],
+			'console_scripts': ['octvidownload=octvi.command_line:main','octviconfig=octvi.config:main'],
 			}
 		)
