@@ -168,7 +168,7 @@ def getUrls(product:str,date:str,tiles=None,lads_or_lp="LADS") -> list:
 	if prefix == "VNP":
 		collection = "5000"
 	else:
-		collection = "6"
+		collection = "61"
 
 	## extract year and doy from date
 	dateObj = datetime.strptime(date,"%Y-%m-%d")
@@ -299,7 +299,7 @@ def getDates(product:str,date:str) -> list:
 	if prefix == "VNP":
 		collection = "5000"
 	else:
-		collection = "6"
+		collection = "61"
 
 	outList = []
 	doyList = []
