@@ -3,9 +3,10 @@ import logging, os
 logging.basicConfig(level=os.environ.get("LOGLEVEL","INFO"))
 log = logging.getLogger(__name__)
 
-import gdal, h5py, octvi.extract
+import h5py, octvi.extract
 import numpy as np
-from gdalnumeric import *
+from osgeo import gdal
+from osgeo.gdal_array import *
 
 supported_indices = ["NDVI","GCVI","NDWI"]
 
