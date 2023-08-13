@@ -4,8 +4,9 @@ logging.basicConfig(level=os.environ.get("LOGLEVEL","INFO"))
 log = logging.getLogger(__name__)
 
 ## import modules
-import octvi.exceptions, octvi.array, gdal
-from gdalnumeric import *
+import octvi.exceptions, octvi.array
+from osgeo import gdal
+from osgeo.gdal_array import *
 import numpy as np
 
 

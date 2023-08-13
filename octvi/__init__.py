@@ -40,7 +40,9 @@ import octvi.exceptions, octvi.array, octvi.extract, octvi.url
 from octvi.url import supported_products
 from octvi.array import supported_indices
 from octvi.config import configFile
-import configparser, gdal, shutil, subprocess
+import configparser, shutil, subprocess
+from osgeo import gdal
+from osgeo.gdal_array import *
 from datetime import datetime, timedelta
 from urllib.request import HTTPError
 
