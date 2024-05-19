@@ -55,6 +55,8 @@ def pull(url:str,out_dir=None,file_name_override=None,retries=5) -> str:
 		url_parts = url.split("/")#[-1].split(".")
 		tile = url_parts[-1].split(".")[2]
 		if file_name_override is None:
+
+			breakpoint()
 			# extracting information from URL string
 			product = url_parts[-4]
 			year = url_parts[-3]
