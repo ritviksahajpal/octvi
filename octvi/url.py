@@ -63,6 +63,11 @@ def pull(url:str,out_dir=None,file_name_override=None,retries=5) -> str:
 				date = datetime.strptime(f"{year}{doy}","%Y%j").strftime("%Y-%m-%d")
 			except:
 				breakpoint()
+				product = url_parts[-3].split(".")[0]  # Product name without version number
+				year = url_parts[-2].split(".")[0]  # Year
+				doy =  url_parts[-1].split(".")[1].split("A")[1][4:]  # Day of Year from the filename part
+				date = datetime.strptime(f"{year}{doy}", "%Y%j").strftime("%Y-%m-%d")
+
 			extension = url_parts[-1].split(".")[-1]
 			# creating output file name
 			out_base = f"{product}.{date}.{tile}.{extension}"
