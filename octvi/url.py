@@ -10,7 +10,7 @@ from io import StringIO
 from  octvi.exceptions import UnavailableError
 from urllib.request import urlopen, Request, URLError, HTTPError
 
-supported_products = ["MOD09Q1","MOD13Q1","MYD09Q1","MYD13Q1","VNP09H1","MOD09Q1N","MOD13Q4N","MOD09CMG","VNP09CMG","MOD09A1"]
+supported_products = ["MOD09Q1","MOD13Q1","MYD09Q1","MYD13Q1","VNP09H1","MOD09Q1N","MOD13Q4N","MOD09CMG","VNP09CMG","MOD09A1","VNP09A1","VJ109A1"]
 #app_key = '95A63BCA-39AE-11E8-B469-FEF9569DBFBA'
 
 
@@ -171,9 +171,19 @@ def getUrls(product:str,date:str,tiles=None,lads_or_lp="LADS") -> list:
 	else:
 		nrt = False
 
-	## assign correct collection number
-	if prefix == "VNP":
+	## assign correct collection number per product version
+	# V002 products (VNP09A1, VJ109A1) use collection 5200 on LAADS DAAC;
+	# V001 products (VNP09CMG, VNP09H1) stay at 5000; MODIS uses 61.
+	_collection_map = {
+		"VNP09A1": "5200",
+		"VJ109A1": "5200",
+	}
+	if product in _collection_map:
+		collection = _collection_map[product]
+	elif prefix == "VNP":
 		collection = "5000"
+	elif prefix == "VJ1":
+		collection = "5200"
 	else:
 		collection = "61"
 
@@ -302,9 +312,17 @@ def getDates(product:str,date:str) -> list:
 		nrt = False
 		dirUrl = "https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/"
 
-	## assign correct collection number
-	if prefix == "VNP":
+	## assign correct collection number per product version
+	_collection_map = {
+		"VNP09A1": "5200",
+		"VJ109A1": "5200",
+	}
+	if product in _collection_map:
+		collection = _collection_map[product]
+	elif prefix == "VNP":
 		collection = "5000"
+	elif prefix == "VJ1":
+		collection = "5200"
 	else:
 		collection = "61"
 
